@@ -6,7 +6,7 @@
 #define RAM_SIZE 0x1000 // 4Kb (12 bits) addressable
 #define DISPLAY_WIDTH 64
 #define DISPLAY_HEIGHT 32
-#define PIXEL_DIM 24 // (PIXEL_DIM x PIXEL_DIM) pixels represent native 1x1
+#define PIXEL_DIM 32 // (PIXEL_DIM x PIXEL_DIM) pixels represent native 1x1
 
 #define INTERPRETER_START_ADR 0x0 // [0, 0x1FF]
 #define PROGRAM_START_ADR 0x200

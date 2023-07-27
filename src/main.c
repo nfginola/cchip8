@@ -1,33 +1,31 @@
 #include "chip8.h"
 #include "sdl_helper.h"
 #include "types.h"
-
-void *read_bin_file(char *fname, u32 *out_size);
+#include "utils.h"
 
 int main(int argc, char **argv) {
    Chip8 *state;
    chip8_init(&state);
 
-   // get cwd
-   char cwd[100];
-   getcwd(cwd, 100);
-   printf("cwd: %s\n", cwd);
+   void *app = NULL;
+   {
+      assert(argc > 1);
+      u32 app_size = 0;
+      app = read_bin_file(argv[1], &app_size);
+      assert(app);
+      chip8_load_app(state, app, app_size);
+   }
 
-   // load app
-   u32 app_size = 0;
-   assert(argc > 1);
-   void *app = read_bin_file(argv[1], &app_size);
-   assert(app);
-   chip8_load_app(state, app, app_size);
-
-   // start SDL
-   SDLCtx *sdl;
-   SDLConfig sdl_conf = {
-       .title = "Chip 8 Emulator", .width = DISPLAY_WIDTH * PIXEL_DIM, .height = DISPLAY_HEIGHT * PIXEL_DIM};
-   assert(sdl2_init(&sdl, &sdl_conf));
+   SDLCtx *sdl = NULL;
+   {
+      SDLConfig sdl_conf = {
+          .title = "Chip 8 Emulator", .width = DISPLAY_WIDTH * PIXEL_DIM, .height = DISPLAY_HEIGHT * PIXEL_DIM};
+      assert(sdl2_init(&sdl, &sdl_conf));
+   }
 
    bool keep_window_open = true;
    while (keep_window_open) {
+      // poll for any events this frame
       SDL_Event e;
       while (SDL_PollEvent(&e) > 0) {
          switch (e.type) {
@@ -37,8 +35,10 @@ int main(int argc, char **argv) {
          }
       }
 
+      // fetch, decode, execute an instruction
       chip8_tick(state);
 
+      // color the screen
       for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
          for (int x = 0; x < DISPLAY_WIDTH; ++x) {
             const u8 color = state->DISPLAY[y][x] ? 255 : 0;
@@ -53,22 +53,4 @@ int main(int argc, char **argv) {
    sdl2_terminate(&sdl);
    chip8_terminate(&state);
    return 0;
-}
-
-void *read_bin_file(char *fname, u32 *out_size) {
-   void *bin = NULL;
-   FILE *file;
-   if ((file = fopen(fname, "rb"))) {
-      // get size
-      fseek(file, 0L, SEEK_END);
-      *out_size = ftell(file);
-      rewind(file);
-
-      // dump app to memory
-      bin = malloc(*out_size);
-      fread(bin, *out_size, 1, file);
-
-      fclose(file);
-   }
-   return bin;
 }
