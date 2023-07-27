@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
 
    // load app
    u32 app_size = 0;
-   void *app = read_bin_file("IBM.ch8", &app_size);
+   assert(argc > 1);
+   void *app = read_bin_file(argv[1], &app_size);
    assert(app);
    chip8_load_app(state, app, app_size);
 
