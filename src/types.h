@@ -23,4 +23,8 @@ typedef int64_t s64;
 typedef float f32;
 typedef double f64;
 
+#define MAX_BIT_VIZ 32
+enum { BIT_OFF, BIT_ON };
+u32 viz_bits(u32 n);
+
 #endif

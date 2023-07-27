@@ -3,7 +3,7 @@
 #define FONT_ADR 0x50
 
 static u8 FONT[] = {
-    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 (look at the packing! its 0 sideways, each bit represents a pixel)
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 : each element represents a row chunk --> 5 rows x 8 width (bits)
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
     0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
@@ -56,9 +56,10 @@ void chip8_tick(Chip8 *state) {
    // decode
    switch (op) {
    case 0x0000: {
-      switch (op) {
+      switch (instr) {
       case 0x00E0:
          memset(state->DISPLAY, 0, sizeof(state->DISPLAY));
+         printf("Instruction (0x%04hX): Clear screen\n", instr);
          break;
       case 0x00EE:
          break;
@@ -67,37 +68,53 @@ void chip8_tick(Chip8 *state) {
    }
    case 0x1000:
       state->PC = NNN;
+      // printf("Instruction (%x): Set PC to (%x)\n", instr, NNN);
       break;
    case 0x6000:
       state->GPR[VX] = NN;
+      printf("Instruction (0x%04hX): GPR[%d] = %d\n", instr, VX, NN);
       break;
    case 0x7000:
       state->GPR[VX] += NN;
+      printf("Instruction (0x%04hX): GPR[%d] += %d\n", instr, VX, NN);
       break;
    case 0xA000:
       state->I = NNN;
+      printf("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN);
       break;
    case 0xD000: {
       u16 x = state->GPR[VX] % DISPLAY_WIDTH;
       u16 y = state->GPR[VY] % DISPLAY_HEIGHT;
       state->VF = 0;
+      printf("Instruction (0x%04hX): Drawing sprite with height %d (N) at (%d, %d) from GPR[%d] and GPR [%d]\n", instr,
+             N, x, y, VX, VY);
 
-      const bool disp_pix_on = state->DISPLAY[y][x];
+      // For each row
       for (u16 n = 0; n < N; ++n) {
          const u8 row = state->RAM[state->I + n];
-         for (s32 i = 7; i >= 0; --i) { // msb to lsb
-            const bool sprite_pix_on = row & (1 << i);
+
+         // For each column
+         for (s32 i = 0; i < 8; ++i) { // msb to lsb
+            const bool disp_pix_on = state->DISPLAY[y][x];
+            const bool sprite_pix_on = row & (1 << (7 - i));
+
             if (sprite_pix_on && disp_pix_on) {
                state->DISPLAY[y][x] = false;
                state->VF = 1;
             } else if (sprite_pix_on && !disp_pix_on) {
                state->DISPLAY[y][x] = true;
             }
-            if (x >= DISPLAY_WIDTH - 1)
-               break; // stop drawing row
+
+            // stop drawing at border
+            if (x >= DISPLAY_WIDTH)
+               break;
             ++x;
          }
-         if (y >= DISPLAY_HEIGHT - 1)
+         // reset (this was the bug..)
+         x -= 8;
+
+         //  stop drawing at border
+         if (y >= DISPLAY_HEIGHT)
             break;
          ++y;
       }

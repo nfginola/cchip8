@@ -11,6 +11,7 @@ set(SOURCE_FILES
    src/adr_stack.c
    src/sdl_helper.c
    src/chip8.c
+   src/viz_bits.c
 )
 
 add_executable(app 
