@@ -1,0 +1,28 @@
+# Options https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+---
+# We'll use defaults from the LLVM style
+BasedOnStyle: LLVM
+IndentWidth: 3
+
+UseTab: Never
+TabWidth: 3
+
+ColumnLimit: 120
+---
+# Cpp used for C and C++
+Language: Cpp 
+
+# For clarity
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+PointerAlignment: Right
+
+AllowAllParametersOfDeclarationOnNextLine: false
+
+AlignEscapedNewlinesLeft: true
+AlignTrailingComments: true
+---
