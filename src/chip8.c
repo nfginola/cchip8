@@ -1,4 +1,5 @@
 #include "chip8.h"
+#include "utils.h"
 
 #define FONT_ADR 0x50
 
@@ -59,7 +60,7 @@ void chip8_tick(Chip8 *state) {
       switch (instr) {
       case 0x00E0:
          memset(state->DISPLAY, 0, sizeof(state->DISPLAY));
-         printf("Instruction (0x%04hX): Clear screen\n", instr);
+         d_printf(("Instruction (0x%04hX): Clear screen\n", instr));
          break;
       case 0x00EE:
          break;
@@ -68,26 +69,26 @@ void chip8_tick(Chip8 *state) {
    }
    case 0x1000:
       state->PC = NNN;
-      // printf("Instruction (%x): Set PC to (%x)\n", instr, NNN);
+      // d_printf(("Instruction (%x): Set PC to (%x)\n", instr, NNN);
       break;
    case 0x6000:
       state->GPR[VX] = NN;
-      printf("Instruction (0x%04hX): GPR[%d] = %d\n", instr, VX, NN);
+      d_printf(("Instruction (0x%04hX): GPR[%d] = %d\n", instr, VX, NN));
       break;
    case 0x7000:
       state->GPR[VX] += NN;
-      printf("Instruction (0x%04hX): GPR[%d] += %d\n", instr, VX, NN);
+      d_printf(("Instruction (0x%04hX): GPR[%d] += %d\n", instr, VX, NN));
       break;
    case 0xA000:
       state->I = NNN;
-      printf("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN);
+      d_printf(("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN));
       break;
    case 0xD000: {
       u16 x = state->GPR[VX] % DISPLAY_WIDTH;
       u16 y = state->GPR[VY] % DISPLAY_HEIGHT;
       state->VF = 0;
-      printf("Instruction (0x%04hX): Drawing sprite with height %d (N) at (%d, %d) from GPR[%d] and GPR [%d]\n", instr,
-             N, x, y, VX, VY);
+      d_printf(("Instruction (0x%04hX): Drawing sprite with height %d (N) at (%d, %d) from GPR[%d] and GPR [%d]\n",
+                instr, N, x, y, VX, VY));
 
       // For each row
       for (u16 n = 0; n < N; ++n) {
