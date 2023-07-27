@@ -8,6 +8,8 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 set(SOURCE_FILES
    src/main.c
+   src/adr_stack.c
+   src/sdl_helper.c
 )
 
 add_executable(app 
@@ -18,3 +20,8 @@ set_property(TARGET app PROPERTY C_STANDARD 99)
 
 # -lm : Target math library for C
 target_link_libraries(app m)
+
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIRS})
+target_link_libraries(app ${SDL2_LIBRARIES})
+
