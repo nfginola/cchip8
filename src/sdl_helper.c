@@ -18,7 +18,10 @@ bool sdl2_init(SDLCtx **ctx, const SDLConfig *conf) {
       return false;
 
    SDL_UpdateWindowSurface((*ctx)->window);
-   // SDL_Delay(5000);
+
+   if (SDL_MUSTLOCK((*ctx)->surface))
+      printf("Must lock surface (SDL_LockSurface()) to access pixels\n");
+
    return true;
 }
 

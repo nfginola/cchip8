@@ -10,6 +10,7 @@ set(SOURCE_FILES
    src/main.c
    src/adr_stack.c
    src/sdl_helper.c
+   src/chip8.c
 )
 
 add_executable(app 
