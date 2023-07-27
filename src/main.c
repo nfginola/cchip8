@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
    }
 
    bool keep_window_open = true;
+   int fun = 0;
    while (keep_window_open) {
       // poll for any events this frame
       SDL_Event e;
@@ -31,6 +32,13 @@ int main(int argc, char **argv) {
          switch (e.type) {
          case SDL_QUIT:
             keep_window_open = false;
+            break;
+         case SDL_KEYDOWN:
+            state->DISPLAY[2][fun] = true;
+            break;
+         case SDL_KEYUP:
+            state->DISPLAY[2][fun] = false;
+            fun = (fun + 1) % DISPLAY_WIDTH;
             break;
          }
       }
