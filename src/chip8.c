@@ -38,8 +38,7 @@ void chip8_terminate(Chip8 **state) {
 }
 
 void chip8_load_app(Chip8 *state, void *data, u32 size) {
-   memcpy(&state->RAM[PROGRAM_START_ADR], data, size);
-   state->PC = PROGRAM_START_ADR;
+   memcpy(&state->RAM[state->PC = PROGRAM_START_ADR], data, size);
 }
 
 void chip8_tick(Chip8 *state) {
@@ -79,6 +78,23 @@ void chip8_tick(Chip8 *state) {
       state->GPR[VX] += NN;
       d_printf(("Instruction (0x%04hX): GPR[%d] += %d\n", instr, VX, NN));
       break;
+   case 0x8000: {
+      switch (N) {
+      case 0:
+         state->GPR[VX] = state->GPR[VY];
+         break;
+      case 1:
+         state->GPR[VX] |= state->GPR[VY];
+         break;
+      case 2:
+         state->GPR[VX] &= state->GPR[VY];
+         break;
+      case 3:
+         state->GPR[VX] ^= state->GPR[VY];
+         break;
+      }
+      break;
+   }
    case 0xA000:
       state->I = NNN;
       d_printf(("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN));
@@ -111,13 +127,56 @@ void chip8_tick(Chip8 *state) {
                break;
             ++x;
          }
-         // reset (this was the bug..)
+         // reset column
          x -= 8;
 
          //  stop drawing at border
          if (y >= DISPLAY_HEIGHT)
             break;
          ++y;
+      }
+      break;
+   }
+   case 0xE000: {
+      assert(false);
+      break;
+   }
+   case 0xF000: {
+      switch (NN) {
+      case 0x009E:
+         assert(false);
+         break;
+      case 0x00A1:
+         assert(false);
+         break;
+      case 0x0007:
+         state->GPR[VX] = state->DELAY_TIMER;
+         break;
+      case 0x000A:
+         assert(false);
+         break;
+      case 0x0015:
+         state->DELAY_TIMER = state->GPR[VX];
+         break;
+      case 0x0018:
+         assert(false); // buzzer == timer?
+         state->SOUND_TIMER = state->GPR[VX];
+         break;
+      case 0x001E:
+         state->I += state->GPR[VX];
+         break;
+      case 0x0029:
+         assert(false);
+         break;
+      case 0x0033:
+         assert(false);
+         break;
+      case 0x0055:
+         assert(false);
+         break;
+      case 0x0065:
+         assert(false);
+         break;
       }
       break;
    }
