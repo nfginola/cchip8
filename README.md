@@ -1,2 +1,1 @@
-# algorithms
-Primeagens Algorithms &amp; Datastructures course
+# Chip8 Emulator in C
