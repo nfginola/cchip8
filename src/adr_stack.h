@@ -2,7 +2,7 @@
 #define _ADR_STACK
 #include "types.h"
 
-#define MAX_ADR_STACK 32
+#define MAX_ADR_STACK 128
 
 typedef struct AdrStack {
    u16 addresses[MAX_ADR_STACK];

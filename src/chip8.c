@@ -61,14 +61,24 @@ void chip8_tick(Chip8 *state) {
          memset(state->DISPLAY, 0, sizeof(state->DISPLAY));
          d_printf(("Instruction (0x%04hX): Clear screen\n", instr));
          break;
-      case 0x00EE:
+      case 0x00EE: {
+         u16 prev_adr = state->PC;
+         state->PC = adr_pop(&state->STACK);
+         d_printf(("(Unfinished?) Instruction (0x%04hX): Returning from subroutine at 0x%04hX to 0x%04hX\n", instr,
+                   prev_adr, state->PC));
          break;
+      }
       }
       break;
    }
    case 0x1000:
       state->PC = NNN;
       // d_printf(("Instruction (%x): Set PC to (%x)\n", instr, NNN);
+      break;
+   case 0x2000:
+      adr_push(&state->STACK, state->PC); // save jump back adr
+      state->PC = NNN;
+      d_printf(("(Unfinished?) Instruction (0x%04hX): Calling subroutine at 0x%04hX\n", instr, state->PC));
       break;
    case 0x6000:
       state->GPR[VX] = NN;
@@ -82,15 +92,19 @@ void chip8_tick(Chip8 *state) {
       switch (N) {
       case 0:
          state->GPR[VX] = state->GPR[VY];
+         d_printf(("Instruction (0x%04hX): GPR[%d] = GPR[%d]\n", instr, VX, VY));
          break;
       case 1:
          state->GPR[VX] |= state->GPR[VY];
+         d_printf(("Instruction (0x%04hX): GPR[%d] |= GPR[%d]\n", instr, VX, VY));
          break;
       case 2:
          state->GPR[VX] &= state->GPR[VY];
+         d_printf(("Instruction (0x%04hX): GPR[%d] &= GPR[%d]\n", instr, VX, VY));
          break;
       case 3:
          state->GPR[VX] ^= state->GPR[VY];
+         d_printf(("Instruction (0x%04hX): GPR[%d] ^= GPR[%d]\n", instr, VX, VY));
          break;
       }
       break;
@@ -99,21 +113,27 @@ void chip8_tick(Chip8 *state) {
       state->I = NNN;
       d_printf(("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN));
       break;
+   case 0xB000:
+      state->PC = NNN + state->GPR[0];
+      d_printf(("(Unfinished?) Instruction (0x%04hX): Jump to address 0x%04hX + 0x%04hX\n", instr, NNN, state->GPR[0]));
+      break;
    case 0xD000: {
-      u16 x = state->GPR[VX] % DISPLAY_WIDTH;
-      u16 y = state->GPR[VY] % DISPLAY_HEIGHT;
+      const u16 base_x = state->GPR[VX] % DISPLAY_WIDTH;
+      const u16 base_y = state->GPR[VY] % DISPLAY_HEIGHT;
       state->VF = 0;
       d_printf(("Instruction (0x%04hX): Drawing sprite with height %d (N) at (%d, %d) from GPR[%d] and GPR [%d]\n",
-                instr, N, x, y, VX, VY));
+                instr, N, base_x, base_y, VX, VY));
 
       // For each row
-      for (u16 n = 0; n < N; ++n) {
-         const u8 row = state->RAM[state->I + n];
+      for (u16 offset_y = 0; offset_y < N; ++offset_y) {
+         const u8 sprite_row = state->RAM[state->I + offset_y];
+         const u16 y = base_y + offset_y;
 
          // For each column
-         for (s32 i = 0; i < 8; ++i) { // msb to lsb
+         for (s32 offset_x = 0; offset_x < 8; ++offset_x) { // msb to lsb
+            const u16 x = base_x + offset_x;
             const bool disp_pix_on = state->DISPLAY[y][x];
-            const bool sprite_pix_on = row & (1 << (7 - i));
+            const bool sprite_pix_on = sprite_row & (1 << (7 - offset_x));
 
             if (sprite_pix_on && disp_pix_on) {
                state->DISPLAY[y][x] = false;
@@ -125,15 +145,11 @@ void chip8_tick(Chip8 *state) {
             // stop drawing at border
             if (x >= DISPLAY_WIDTH)
                break;
-            ++x;
          }
-         // reset column
-         x -= 8;
 
          //  stop drawing at border
          if (y >= DISPLAY_HEIGHT)
             break;
-         ++y;
       }
       break;
    }
@@ -151,19 +167,22 @@ void chip8_tick(Chip8 *state) {
          break;
       case 0x0007:
          state->GPR[VX] = state->DELAY_TIMER;
+         d_printf(("Instruction (0x%04hX): GPR[%d] = %d (Delay Timer)\n", instr, VX, state->DELAY_TIMER));
          break;
       case 0x000A:
          assert(false);
          break;
       case 0x0015:
          state->DELAY_TIMER = state->GPR[VX];
+         d_printf(("Instruction (0x%04hX): Delay Timer = GPR[%d] = %d\n", instr, VX, state->DELAY_TIMER));
          break;
       case 0x0018:
-         assert(false); // buzzer == timer?
          state->SOUND_TIMER = state->GPR[VX];
+         d_printf(("Instruction (0x%04hX): Sound Timer = GPR[%d] = %d\n", instr, VX, state->SOUND_TIMER));
          break;
       case 0x001E:
          state->I += state->GPR[VX];
+         d_printf(("Instruction (0x%04hX): I += GPR[%d]\n", instr, VX));
          break;
       case 0x0029:
          assert(false);
@@ -172,10 +191,18 @@ void chip8_tick(Chip8 *state) {
          assert(false);
          break;
       case 0x0055:
-         assert(false);
+         for (size_t i = 0; i <= VX; ++i) // last included (through i+x)
+            state->RAM[state->I + i] = state->GPR[i];
+
+         d_printf(("Instruction (0x%04hX): Saving [V0, V%d] --> [RAM[0x%04hX], RAM[0x%04hX + %d]]\n", instr, VX,
+                   state->I, state->I, VX));
          break;
       case 0x0065:
-         assert(false);
+         for (size_t i = 0; i <= VX; ++i)
+            state->GPR[i] = state->RAM[state->I + i];
+
+         d_printf(("Instruction (0x%04hX): Saving [V0, V%d] <-- [RAM[0x%04hX], RAM[0x%04hX + %d]]\n", instr, VX,
+                   state->I, state->I, VX));
          break;
       }
       break;
