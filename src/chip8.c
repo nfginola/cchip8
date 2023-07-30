@@ -67,7 +67,7 @@ void chip8_load_app(Chip8 *state, void *data, u32 size) {
    memcpy(&state->RAM[state->PC = PROGRAM_START_ADR], data, size);
 }
 
-void chip8_tick(Chip8 *state, u8 key_pressed) {
+void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
    // fetch
    const u16 instr = ((u16)state->RAM[state->PC] << 8) | ((u16)state->RAM[state->PC + 1]);
    state->PC += 2;
@@ -306,6 +306,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
             d_printf(("key pressed: 0x%04hX, set to %d\n", state->GPR[VX], KEYS[state->GPR[VX]]));
          } else {
             state->PC -= 2; // wait if no keypress
+            d_printf(("waiting...\n"));
          }
          break;
       case 0x0015:

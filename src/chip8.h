@@ -34,7 +34,7 @@ void chip8_load_app(Chip8 *state, void *data, u32 size);
 
 bool chip8_should_draw();
 
-void chip8_tick(Chip8 *state, u8 key_pressed);
+void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released);
 void chip8_timer_tick(Chip8 *state);
 
 #endif

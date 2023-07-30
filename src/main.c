@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
    }
 
    u8 key_pressed = 0;
+   u8 key_released = 0;
    const u8 *kb_state = NULL;
    s32 num_keys = 0;
 
@@ -50,8 +51,18 @@ int main(int argc, char **argv) {
       u64 time_beg = time_in_ms();
 
       SDL_PumpEvents();
+
       kb_state = SDL_GetKeyboardState(&num_keys);
 
+      // check for keyup after prev frame
+      if (key_pressed < 16) {
+         if (!kb_state[CONTROLS[key_pressed]]) {
+            key_released = key_pressed;
+         }
+      } else
+         key_released = UINT8_MAX;
+
+      // check for keydown
       for (s32 i = 0; i < 16; ++i) {
          if (kb_state[CONTROLS[i]]) {
             key_pressed = i;
@@ -74,7 +85,7 @@ int main(int argc, char **argv) {
       }
 
       // fetch, decode, execute an instruction
-      chip8_tick(state, key_pressed);
+      chip8_tick(state, key_pressed, key_released);
       chip8_timer_tick(state);
 
       // color the screen
