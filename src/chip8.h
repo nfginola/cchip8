@@ -40,5 +40,6 @@ bool chip8_should_draw(Chip8 *state);
 
 void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released);
 void chip8_timer_tick(Chip8 *state);
+bool chip8_sync_display();
 
 #endif

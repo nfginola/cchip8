@@ -1,8 +1,43 @@
 #include "chip8.h"
 #include "utils.h"
 
+// Select target hardware
+#define CHIP8
+// #define SCHIP
+// #define XOCHIP
+
 #define FONT_ADR 0x50
+#define FONT_STRIDE 5
+
+// Timers decremented at a rate of 60 Hz (60 times per second)
 #define TIMER_FREQ_HZ 60
+#define TIMER_THRESHOLD_MS ((1.0 / TIMER_FREQ_HZ) * 1000.0)
+
+/*
+ * Quirks:
+ *
+ * Q_VF_RESET
+ * Q_MEMORY
+ * Q_DISP_WAIT
+ * Q_CLIPPING
+ * Q_SHIFTING
+ * Q_JUMPING
+ */
+#ifdef CHIP8
+#define Q_VF_RESET
+#define Q_MEMORY
+#define Q_DISP_WAIT
+#define Q_CLIPPING
+
+#elif defined(SCHIP)
+#define Q_CLIPPING
+#define Q_SHIFTING
+#define Q_JUMPING
+
+#elif defined(XOCHIP)
+#define Q_MEMORY
+
+#endif
 
 static const u8 FONT[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 : each element represents a row chunk --> 5 rows x 8 width (bits)
@@ -123,17 +158,23 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
          break;
       case 1:
          state->GPR[VX] |= state->GPR[VY];
+#ifdef Q_VF_RESET
          state->GPR[0xF] = 0;
+#endif
          d_printf(("Instruction (0x%04hX): GPR[%d] |= GPR[%d]\n", instr, VX, VY));
          break;
       case 2:
          state->GPR[VX] &= state->GPR[VY];
+#ifdef Q_VF_RESET
          state->GPR[0xF] = 0;
+#endif
          d_printf(("Instruction (0x%04hX): GPR[%d] &= GPR[%d]\n", instr, VX, VY));
          break;
       case 3:
          state->GPR[VX] ^= state->GPR[VY];
+#ifdef Q_VF_RESET
          state->GPR[0xF] = 0;
+#endif
          d_printf(("Instruction (0x%04hX): GPR[%d] ^= GPR[%d]\n", instr, VX, VY));
          break;
       case 4: {
@@ -171,8 +212,14 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
          break;
       }
       case 6: {
+#ifdef Q_SHIFTING
+         const u8 old = state->GPR[VX];
+         state->GPR[VX] = state->GPR[VX] >> 1;
+#else
          const u8 old = state->GPR[VY];
          state->GPR[VX] = state->GPR[VY] >> 1;
+
+#endif
 
          // VF = LSB of old value
          state->GPR[0xF] = old & 0x1;
@@ -193,8 +240,13 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
          break;
       }
       case 0xE: {
+#ifdef Q_SHIFTING
+         const u8 old = state->GPR[VX];
+         state->GPR[VX] = state->GPR[VX] << 1;
+#else
          const u8 old = state->GPR[VY];
          state->GPR[VX] = state->GPR[VY] << 1;
+#endif
 
          // VF = MSB of old value
          state->GPR[0xF] = (old & (0x1 << 7)) >> 7; // put back in place
@@ -212,7 +264,11 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       d_printf(("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN));
       break;
    case 0xB000:
+#ifdef Q_JUMPING
+      state->PC = NNN + state->GPR[(NNN & (0xF << 8)) >> 8];
+#else
       state->PC = NNN + state->GPR[0];
+#endif
       d_printf(("(Unfinished?) Instruction (0x%04hX): Jump to address 0x%04hX + 0x%04hX\n", instr, NNN, state->GPR[0]));
       break;
    case 0xC000:
@@ -229,18 +285,26 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       // For each row
       for (u32 offset_y = 0; offset_y < N; ++offset_y) {
          const u8 sprite_row = state->RAM[state->I + offset_y];
-         const u16 y = (base_y + offset_y);
+         u16 y = (base_y + offset_y);
 
-         // clip at borderj
+// clip at borderj
+#ifdef Q_CLIPPING
          if (y >= DISPLAY_HEIGHT)
             break;
+#else
+         y %= DISPLAY_HEIGHT;
+#endif
 
          // For each column
          for (u8 offset_x = 0; offset_x < 8; ++offset_x) { // msb to lsb
-            const u16 x = (base_x + offset_x);
+            u16 x = (base_x + offset_x);
 
+#ifdef Q_CLIPPING
             if (x >= DISPLAY_WIDTH)
                break;
+#else
+            x %= DISPLAY_WIDTH;
+#endif
 
             const bool disp_pix_on = state->DISPLAY[y][x];
             const bool sprite_pix_on = sprite_row & (1 << (7 - offset_x));
@@ -309,7 +373,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
          d_printf(("Instruction (0x%04hX): I += GPR[%d]\n", instr, VX));
          break;
       case 0x0029:
-         state->I = FONT_ADR + state->GPR[VX] * 5; // times font stride
+         state->I = FONT_ADR + state->GPR[VX] * FONT_STRIDE;
          break;
       case 0x0033: {
          u8 div = 100;
@@ -325,7 +389,9 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       case 0x0055:
          for (size_t i = 0; i <= VX; ++i) // last included (through i+x)
             state->RAM[state->I + i] = state->GPR[i];
+#ifdef Q_MEMORY
          state->I += VX + 1;
+#endif
 
          d_printf(("Instruction (0x%04hX): Saving [V0, V%d] --> [RAM[0x%04hX], RAM[0x%04hX + %d]]\n", instr, VX,
                    state->I, state->I, VX));
@@ -333,7 +399,9 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       case 0x0065:
          for (size_t i = 0; i <= VX; ++i)
             state->GPR[i] = state->RAM[state->I + i];
+#ifdef Q_MEMORY
          state->I += VX + 1;
+#endif
 
          d_printf(("Instruction (0x%04hX): Saving [V0, V%d] <-- [RAM[0x%04hX], RAM[0x%04hX + %d]]\n", instr, VX,
                    state->I, state->I, VX));
@@ -353,15 +421,21 @@ bool chip8_should_draw(Chip8 *state) {
 }
 
 void chip8_timer_tick(Chip8 *state) {
-   // decremented at a rate of 60Hz (60 times per second)
-   const u64 threshold = ceilf((1.0 / TIMER_FREQ_HZ) * 1000.0); // in ms
-   u64 curr = time_in_ms();
-   u64 diff = curr - state->PREV_TIME;
-   if (diff > threshold) {
+   const u64 curr = time_in_ms();
+   const u64 diff = curr - state->PREV_TIME;
+   if (diff > ceilf(TIMER_THRESHOLD_MS)) {
       if (state->DELAY_TIMER >= 1)
          state->DELAY_TIMER -= 1;
       if (state->SOUND_TIMER >= 1)
          state->SOUND_TIMER -= 1;
       state->PREV_TIME = curr;
    }
+}
+
+bool chip8_sync_display() {
+#ifdef Q_DISP_WAIT
+   return true;
+#else
+   return false;
+#endif
 }
