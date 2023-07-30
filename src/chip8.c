@@ -136,14 +136,17 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
          break;
       case 1:
          state->GPR[VX] |= state->GPR[VY];
+         state->GPR[0xF] = 0;
          d_printf(("Instruction (0x%04hX): GPR[%d] |= GPR[%d]\n", instr, VX, VY));
          break;
       case 2:
          state->GPR[VX] &= state->GPR[VY];
+         state->GPR[0xF] = 0;
          d_printf(("Instruction (0x%04hX): GPR[%d] &= GPR[%d]\n", instr, VX, VY));
          break;
       case 3:
          state->GPR[VX] ^= state->GPR[VY];
+         state->GPR[0xF] = 0;
          d_printf(("Instruction (0x%04hX): GPR[%d] ^= GPR[%d]\n", instr, VX, VY));
          break;
       case 4: {
@@ -334,6 +337,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       case 0x0055:
          for (size_t i = 0; i <= VX; ++i) // last included (through i+x)
             state->RAM[state->I + i] = state->GPR[i];
+         state->I += VX + 1;
 
          d_printf(("Instruction (0x%04hX): Saving [V0, V%d] --> [RAM[0x%04hX], RAM[0x%04hX + %d]]\n", instr, VX,
                    state->I, state->I, VX));
@@ -341,6 +345,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       case 0x0065:
          for (size_t i = 0; i <= VX; ++i)
             state->GPR[i] = state->RAM[state->I + i];
+         state->I += VX + 1;
 
          d_printf(("Instruction (0x%04hX): Saving [V0, V%d] <-- [RAM[0x%04hX], RAM[0x%04hX + %d]]\n", instr, VX,
                    state->I, state->I, VX));
