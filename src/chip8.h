@@ -24,7 +24,6 @@ typedef struct Chip8 {
    u8 DELAY_TIMER;
    u8 SOUND_TIMER;
    u8 GPR[NUM_GPRS];
-   u8 VF;
 
 } Chip8;
 

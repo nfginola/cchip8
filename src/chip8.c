@@ -143,22 +143,29 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
          d_printf(("Instruction (0x%04hX): GPR[%d] ^= GPR[%d]\n", instr, VX, VY));
          break;
       case 4: {
-         u8 old = state->GPR[VX];
+         const u8 op_l = state->GPR[VX];
+         const u8 op_r = state->GPR[VY];
+
+         // must be performed first, before carry flag is set!
+         // math will be off if vF is used as input
          state->GPR[VX] += state->GPR[VY];
 
-         // overflow --> set to 1 if carry occurs
-         if (state->GPR[VX] < old)
-            state->VF = 1;
+         if (op_l > (UINT8_MAX - op_r))
+            state->GPR[0xF] = 1;
          else
-            state->VF = 0;
+            state->GPR[0xF] = 0;
+
+         // d_printf(("-------------- Overflow, %d += %d --> state->GPR[VX] = %d, with VF = %d, with diff = %d\n", old,
+         //          state->GPR[VY], state->GPR[VX], state->VF, diff));
+
          break;
       }
       case 5: {
          // will underflow --> set to 0 if borrow occurs
          if (state->GPR[VX] < state->GPR[VY])
-            state->VF = 0;
+            state->GPR[0xF] = 0;
          else
-            state->VF = 1;
+            state->GPR[0xF] = 0;
          /* Another way to think of above is:
           * VF = 1
           *
@@ -172,23 +179,23 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       case 6: {
          state->GPR[VX] = state->GPR[VY];
          // VF = LSB of old value
-         state->VF = state->GPR[VX] & 0x1;
+         state->GPR[0xF] = state->GPR[VX] & 0x1;
          state->GPR[VX] >>= 1;
          d_printf(("Vague Instruction (0x%04hX): ...\n", instr));
          break;
       }
       case 7: {
          if (state->GPR[VY] < state->GPR[VX])
-            state->VF = 0;
+            state->GPR[0xF] = 0;
          else
-            state->VF = 1;
+            state->GPR[0xF] = 1;
          state->GPR[VX] = state->GPR[VY] - state->GPR[VX];
          break;
       }
       case 0xE: {
          state->GPR[VX] = state->GPR[VY];
          // VF = MSB of old value
-         state->VF = state->GPR[VX] & (0x1 << 7);
+         state->GPR[0xF] = state->GPR[VX] & (0x1 << 7);
          state->GPR[VX] <<= 1;
          break;
       }
@@ -214,7 +221,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       SHOULD_DRAW = true;
       const u16 base_x = state->GPR[VX] % DISPLAY_WIDTH;
       const u16 base_y = state->GPR[VY] % DISPLAY_HEIGHT;
-      state->VF = 0;
+      state->GPR[0xF] = 0;
       d_printf(("Instruction (0x%04hX): Drawing sprite with height %d (N) at (%d, %d) from GPR[%d] and GPR [%d]\n",
                 instr, N, base_x, base_y, VX, VY));
 
@@ -231,7 +238,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
 
             if (sprite_pix_on && disp_pix_on) {
                state->DISPLAY[y][x] = false;
-               state->VF = 1;
+               state->GPR[0xF] = 1;
             } else if (sprite_pix_on && !disp_pix_on) {
                state->DISPLAY[y][x] = true;
             }
