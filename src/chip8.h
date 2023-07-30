@@ -7,8 +7,8 @@
 #define DISPLAY_WIDTH 64
 #define DISPLAY_HEIGHT 32
 
-#define PIXEL_DIM 16        // (PIXEL_DIM x PIXEL_DIM) pixels represent native 1x1
-#define PIXEL_EDGE_OFFSET 0 // Offset colors from pixel edge for some better looking large blocks!
+#define PIXEL_DIM 24        // (PIXEL_DIM x PIXEL_DIM) pixels represent native 1x1
+#define PIXEL_EDGE_OFFSET 1 // Offset colors from pixel edge for some better looking large blocks!
 
 #define INTERPRETER_START_ADR 0x0 // [0, 0x1FF]
 #define PROGRAM_START_ADR 0x200

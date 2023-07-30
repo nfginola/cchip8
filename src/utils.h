@@ -2,7 +2,7 @@
 #define _UTILS
 #include "types.h"
 
-#define DBG_PRINT 0
+#define DBG_PRINT 1
 
 #if DBG_PRINT
 #define d_printf(a) printf a
