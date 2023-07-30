@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #define FONT_ADR 0x50
+#define TIMER_FREQ_HZ 60
 
 static u8 FONT[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 : each element represents a row chunk --> 5 rows x 8 width (bits)
@@ -268,6 +269,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       switch (NN) {
       case 0x009E: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
+         KEYS[state->GPR[VX]] = extra_cond; // sync with direct input
+
          if (KEYS[state->GPR[VX]] || extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
@@ -276,6 +279,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       }
       case 0x00A1: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
+         KEYS[state->GPR[VX]] = extra_cond; // sync with direct input
+
          if (!KEYS[state->GPR[VX]] && !extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
@@ -313,7 +318,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
          d_printf(("Instruction (0x%04hX): I += GPR[%d]\n", instr, VX));
          break;
       case 0x0029:
-         state->I = FONT_ADR + state->GPR[VX];
+         state->I = FONT_ADR + state->GPR[VX] * 5; // times font stride
          break;
       case 0x0033: {
          u8 div = 100;
@@ -348,16 +353,6 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       assert(false);
       break;
    }
-
-   // todo: should be decremented at 60Hz == 60 times per second
-   // have a global timer here
-   // this seems to to be the cause of the loading bar bug!
-   return;
-
-   if (state->DELAY_TIMER >= 1)
-      state->DELAY_TIMER -= 1;
-   if (state->SOUND_TIMER >= 1)
-      state->SOUND_TIMER -= 1;
 }
 
 bool chip8_should_draw() {
@@ -365,7 +360,8 @@ bool chip8_should_draw() {
 }
 
 void chip8_timer_tick(Chip8 *state) {
-   const u64 threshold = ceilf((1.0 / 60.0) * 1000.0);
+   // decremented at a rate of 60Hz (60 times per second)
+   const u64 threshold = ceilf((1.0 / TIMER_FREQ_HZ) * 1000.0); // in ms
    u64 curr = time_in_ms();
    u64 diff = curr - PREV_TIME;
    if (diff > threshold) {

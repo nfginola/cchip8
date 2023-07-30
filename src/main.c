@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
          if (kb_state[CONTROLS[i]]) {
             key_pressed = i;
             break;
-         }
+         } else
+            key_pressed = UINT8_MAX;
       }
 
       // use ESC for QUIT as well
@@ -75,7 +76,6 @@ int main(int argc, char **argv) {
       // fetch, decode, execute an instruction
       chip8_tick(state, key_pressed);
       chip8_timer_tick(state);
-      key_pressed = UINT8_MAX; // set to invalid
 
       // color the screen
       if (chip8_should_draw()) {
