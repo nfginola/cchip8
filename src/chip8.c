@@ -265,6 +265,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       switch (NN) {
       case 0x009E: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
+         printf("WHAT2\n");
          if (KEYS[state->GPR[VX]] || extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
@@ -273,7 +274,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       }
       case 0x00A1: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
-         if (!KEYS[state->GPR[VX]] || !extra_cond) {
+         printf("WHAT == 0x%04hX\n", state->GPR[VX]);
+         if (!KEYS[state->GPR[VX]] && !extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
          }
@@ -348,6 +350,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
 
    // todo: should be decremented at 60Hz == 60 times per second
    // have a global timer here
+   // this seems to to be the cause of the loading bar bug!
    if (state->DELAY_TIMER >= 1)
       state->DELAY_TIMER -= 1;
    if (state->SOUND_TIMER >= 1)
