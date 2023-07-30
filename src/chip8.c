@@ -4,7 +4,7 @@
 #define FONT_ADR 0x50
 #define TIMER_FREQ_HZ 60
 
-static u8 FONT[] = {
+static const u8 FONT[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 : each element represents a row chunk --> 5 rows x 8 width (bits)
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -23,28 +23,15 @@ static u8 FONT[] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-static bool KEYS[16] = {false};
+static const u8 KEY_MAPPING[16] = {1, 2, 3, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
+
 /*
+ * Map accordingly to your desired key layout
  * 1 2 3 C
  * 4 5 6 D
  * 7 8 9 E
  * A 0 B F
  */
-
-/*
- * Expects below layout from outside (row by row)
- *
- * 0 1 2 3
- * 4 5 6 7
- * 8 9 10 11
- * 12 13 14 15
- *
- */
-
-static u8 KEY_MAPPING[16] = {1, 2, 3, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
-
-static bool SHOULD_DRAW = false;
-static u64 PREV_TIME = 0;
 
 bool chip8_init(Chip8 **state) {
    *state = calloc(1, sizeof(**state));
@@ -52,7 +39,7 @@ bool chip8_init(Chip8 **state) {
    // init chip8 font (anywhere in the interpreter space, but commonly at FONT_ADR)
    memcpy(&(*state)->RAM[FONT_ADR], &FONT, sizeof(FONT));
 
-   PREV_TIME = time_in_ms();
+   (*state)->PREV_TIME = time_in_ms();
 
    return true;
 }
@@ -79,7 +66,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
    const u16 NN = instr & 0x00FF;  // reused 3rd and 4th nibbles
    const u16 NNN = instr & 0x0FFF; // reused [2nd, 4th] nibbles
 
-   SHOULD_DRAW = false;
+   state->SHOULD_DRAW = false;
 
    // decode
    switch (op) {
@@ -232,7 +219,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       state->GPR[VX] = (rand() % 255) & NN;
       break;
    case 0xD000: {
-      SHOULD_DRAW = true;
+      state->SHOULD_DRAW = true;
       const u16 base_x = state->GPR[VX] % DISPLAY_WIDTH;
       const u16 base_y = state->GPR[VY] % DISPLAY_HEIGHT;
       state->GPR[0xF] = 0;
@@ -272,21 +259,21 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       switch (NN) {
       case 0x009E: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
-         KEYS[state->GPR[VX]] = extra_cond; // sync with direct input
+         state->KEYS[state->GPR[VX]] = extra_cond; // sync with direct input
 
-         if (KEYS[state->GPR[VX]] || extra_cond) {
+         if (state->KEYS[state->GPR[VX]] || extra_cond) {
             state->PC += 2;
-            KEYS[state->GPR[VX]] = false; // reset
+            state->KEYS[state->GPR[VX]] = false; // reset
          }
          break;
       }
       case 0x00A1: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
-         KEYS[state->GPR[VX]] = extra_cond; // sync with direct input
+         state->KEYS[state->GPR[VX]] = extra_cond; // sync with direct input
 
-         if (!KEYS[state->GPR[VX]] && !extra_cond) {
+         if (!state->KEYS[state->GPR[VX]] && !extra_cond) {
             state->PC += 2;
-            KEYS[state->GPR[VX]] = false; // reset
+            state->KEYS[state->GPR[VX]] = false; // reset
          }
          break;
       }
@@ -302,11 +289,11 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       case 0x000A:
          if (key_released < 16) {
             state->GPR[VX] = KEY_MAPPING[key_released];
-            KEYS[state->GPR[VX]] = true; // set key to true
+            state->KEYS[state->GPR[VX]] = true; // set key to true
             d_printf(("key pressed: 0x%04hX, set to %d\n", state->GPR[VX], KEYS[state->GPR[VX]]));
          } else {
             state->PC -= 2; // wait if no keypress
-            d_printf(("waiting...\n"));
+            d_printf(("waiting for keypress..\n"));
          }
          break;
       case 0x0015:
@@ -361,20 +348,20 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
    }
 }
 
-bool chip8_should_draw() {
-   return SHOULD_DRAW;
+bool chip8_should_draw(Chip8 *state) {
+   return state->SHOULD_DRAW;
 }
 
 void chip8_timer_tick(Chip8 *state) {
    // decremented at a rate of 60Hz (60 times per second)
    const u64 threshold = ceilf((1.0 / TIMER_FREQ_HZ) * 1000.0); // in ms
    u64 curr = time_in_ms();
-   u64 diff = curr - PREV_TIME;
+   u64 diff = curr - state->PREV_TIME;
    if (diff > threshold) {
       if (state->DELAY_TIMER >= 1)
          state->DELAY_TIMER -= 1;
       if (state->SOUND_TIMER >= 1)
          state->SOUND_TIMER -= 1;
-      PREV_TIME = curr;
+      state->PREV_TIME = curr;
    }
 }

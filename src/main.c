@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
       chip8_timer_tick(state);
 
       // color the screen
-      if (chip8_should_draw()) {
+      if (chip8_should_draw(state)) {
          for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
             for (int x = 0; x < DISPLAY_WIDTH; ++x) {
                const u8 color = state->DISPLAY[y][x] ? 255 : 14; // Modify ON/OFF color :)

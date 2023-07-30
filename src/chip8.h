@@ -25,6 +25,10 @@ typedef struct Chip8 {
    u8 SOUND_TIMER;
    u8 GPR[NUM_GPRS];
 
+   bool KEYS[16];
+   bool SHOULD_DRAW;
+   u64 PREV_TIME;
+
 } Chip8;
 
 bool chip8_init(Chip8 **state);
@@ -32,7 +36,7 @@ void chip8_terminate(Chip8 **state);
 
 void chip8_load_app(Chip8 *state, void *data, u32 size);
 
-bool chip8_should_draw();
+bool chip8_should_draw(Chip8 *state);
 
 void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released);
 void chip8_timer_tick(Chip8 *state);
