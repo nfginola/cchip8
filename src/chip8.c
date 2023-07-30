@@ -155,48 +155,55 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
          else
             state->GPR[0xF] = 0;
 
-         // d_printf(("-------------- Overflow, %d += %d --> state->GPR[VX] = %d, with VF = %d, with diff = %d\n", old,
-         //          state->GPR[VY], state->GPR[VX], state->VF, diff));
-
          break;
       }
       case 5: {
+         const u8 op_l = state->GPR[VX];
+         const u8 op_r = state->GPR[VY];
+
+         state->GPR[VX] -= state->GPR[VY];
+
          // will underflow --> set to 0 if borrow occurs
-         if (state->GPR[VX] < state->GPR[VY])
+         if (op_l < op_r)
             state->GPR[0xF] = 0;
          else
-            state->GPR[0xF] = 0;
+            state->GPR[0xF] = 1;
          /* Another way to think of above is:
           * VF = 1
           *
           * if (VX < VY) state->VF = 0     --> The subtraction borrows from VF and therefore sets it to 0!
           *
           */
-
-         state->GPR[VX] -= state->GPR[VY];
          break;
       }
       case 6: {
-         state->GPR[VX] = state->GPR[VY];
+         const u8 old = state->GPR[VY];
+         state->GPR[VX] = state->GPR[VY] >> 1;
+
          // VF = LSB of old value
-         state->GPR[0xF] = state->GPR[VX] & 0x1;
-         state->GPR[VX] >>= 1;
+         state->GPR[0xF] = old & 0x1;
          d_printf(("Vague Instruction (0x%04hX): ...\n", instr));
          break;
       }
       case 7: {
-         if (state->GPR[VY] < state->GPR[VX])
+         const u8 op_l = state->GPR[VY];
+         const u8 op_r = state->GPR[VX];
+
+         state->GPR[VX] = state->GPR[VY] - state->GPR[VX];
+
+         if (op_l < op_r)
             state->GPR[0xF] = 0;
          else
             state->GPR[0xF] = 1;
-         state->GPR[VX] = state->GPR[VY] - state->GPR[VX];
+
          break;
       }
       case 0xE: {
-         state->GPR[VX] = state->GPR[VY];
+         const u8 old = state->GPR[VY];
+         state->GPR[VX] = state->GPR[VY] << 1;
+
          // VF = MSB of old value
-         state->GPR[0xF] = state->GPR[VX] & (0x1 << 7);
-         state->GPR[VX] <<= 1;
+         state->GPR[0xF] = (old & (0x1 << 7)) >> 7; // put back in place
          break;
       }
       }
