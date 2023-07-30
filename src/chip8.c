@@ -237,13 +237,21 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
                 instr, N, base_x, base_y, VX, VY));
 
       // For each row
-      for (u16 offset_y = 0; offset_y < N; ++offset_y) {
+      for (u32 offset_y = 0; offset_y < N; ++offset_y) {
          const u8 sprite_row = state->RAM[state->I + offset_y];
-         const u16 y = base_y + offset_y;
+         const u16 y = (base_y + offset_y);
+
+         // clip at borderj
+         if (y >= DISPLAY_HEIGHT)
+            break;
 
          // For each column
-         for (s32 offset_x = 0; offset_x < 8; ++offset_x) { // msb to lsb
-            const u16 x = base_x + offset_x;
+         for (u8 offset_x = 0; offset_x < 8; ++offset_x) { // msb to lsb
+            const u16 x = (base_x + offset_x);
+
+            if (x >= DISPLAY_WIDTH)
+               break;
+
             const bool disp_pix_on = state->DISPLAY[y][x];
             const bool sprite_pix_on = sprite_row & (1 << (7 - offset_x));
 
@@ -253,15 +261,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
             } else if (sprite_pix_on && !disp_pix_on) {
                state->DISPLAY[y][x] = true;
             }
-
-            // stop drawing at border
-            if (x >= DISPLAY_WIDTH)
-               break;
          }
-
-         //  stop drawing at border
-         if (y >= DISPLAY_HEIGHT)
-            break;
       }
       break;
    }
