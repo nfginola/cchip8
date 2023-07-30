@@ -300,8 +300,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
          d_printf(("Instruction (0x%04hX): GPR[%d] = %d (Delay Timer)\n", instr, VX, state->DELAY_TIMER));
          break;
       case 0x000A:
-         if (key_pressed < 16) {
-            state->GPR[VX] = KEY_MAPPING[key_pressed];
+         if (key_released < 16) {
+            state->GPR[VX] = KEY_MAPPING[key_released];
             KEYS[state->GPR[VX]] = true; // set key to true
             d_printf(("key pressed: 0x%04hX, set to %d\n", state->GPR[VX], KEYS[state->GPR[VX]]));
          } else {
