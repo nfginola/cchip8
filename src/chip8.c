@@ -1,10 +1,7 @@
 #include "chip8.h"
 #include "utils.h"
 
-// Select target hardware
-#define CHIP8
-// #define SCHIP
-// #define XOCHIP
+// Select target hardware in CMakeLists
 
 #define FONT_ADR 0x50
 #define FONT_STRIDE 5
@@ -39,6 +36,14 @@
 
 #endif
 
+/*
+ * Map accordingly to your desired key layout
+ * 1 2 3 C
+ * 4 5 6 D
+ * 7 8 9 E
+ * A 0 B F
+ */
+static const u8 KEY_MAPPING[16] = {1, 2, 3, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
 static const u8 FONT[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0 : each element represents a row chunk --> 5 rows x 8 width (bits)
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -57,16 +62,6 @@ static const u8 FONT[] = {
     0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
-
-static const u8 KEY_MAPPING[16] = {1, 2, 3, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
-
-/*
- * Map accordingly to your desired key layout
- * 1 2 3 C
- * 4 5 6 D
- * 7 8 9 E
- * A 0 B F
- */
 
 bool chip8_init(Chip8 **state) {
    *state = calloc(1, sizeof(**state));

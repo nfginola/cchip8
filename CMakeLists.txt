@@ -28,3 +28,7 @@ find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 target_link_libraries(app ${SDL2_LIBRARIES})
 
+target_compile_definitions(app PRIVATE CHIP8)
+#target_compile_definitions(app PRIVATE SCHIP)
+#target_compile_definitions(app PRIVATE XOCHIP)
+
