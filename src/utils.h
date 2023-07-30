@@ -2,7 +2,7 @@
 #define _UTILS
 #include "types.h"
 
-#define DBG_PRINT 1
+#define DBG_PRINT 0
 
 #if DBG_PRINT
 #define d_printf(a) printf a
@@ -11,5 +11,6 @@
 #endif
 
 void *read_bin_file(char *fname, u32 *out_size);
+u64 time_in_ms();
 
 #endif

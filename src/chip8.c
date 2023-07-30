@@ -43,12 +43,15 @@ static bool KEYS[16] = {false};
 static u8 KEY_MAPPING[16] = {1, 2, 3, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
 
 static bool SHOULD_DRAW = false;
+static u64 PREV_TIME = 0;
 
 bool chip8_init(Chip8 **state) {
    *state = calloc(1, sizeof(**state));
 
    // init chip8 font (anywhere in the interpreter space, but commonly at FONT_ADR)
    memcpy(&(*state)->RAM[FONT_ADR], &FONT, sizeof(FONT));
+
+   PREV_TIME = time_in_ms();
 
    return true;
 }
@@ -265,7 +268,6 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       switch (NN) {
       case 0x009E: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
-         printf("WHAT2\n");
          if (KEYS[state->GPR[VX]] || extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
@@ -274,7 +276,6 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       }
       case 0x00A1: {
          const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
-         printf("WHAT == 0x%04hX\n", state->GPR[VX]);
          if (!KEYS[state->GPR[VX]] && !extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
@@ -351,6 +352,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
    // todo: should be decremented at 60Hz == 60 times per second
    // have a global timer here
    // this seems to to be the cause of the loading bar bug!
+   return;
+
    if (state->DELAY_TIMER >= 1)
       state->DELAY_TIMER -= 1;
    if (state->SOUND_TIMER >= 1)
@@ -359,4 +362,17 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
 
 bool chip8_should_draw() {
    return SHOULD_DRAW;
+}
+
+void chip8_timer_tick(Chip8 *state) {
+   const u64 threshold = ceilf((1.0 / 60.0) * 1000.0);
+   u64 curr = time_in_ms();
+   u64 diff = curr - PREV_TIME;
+   if (diff > threshold) {
+      if (state->DELAY_TIMER >= 1)
+         state->DELAY_TIMER -= 1;
+      if (state->SOUND_TIMER >= 1)
+         state->SOUND_TIMER -= 1;
+      PREV_TIME = curr;
+   }
 }

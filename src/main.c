@@ -18,14 +18,8 @@ static SDL_Scancode CONTROLS[] = {
  * Z X C V
  */
 
-#define INSTRUCTIONS_PER_SECOND 200
+#define INSTRUCTIONS_PER_SECOND 700
 #define BUDGET_IN_MICROSECONDS (1000000 / INSTRUCTIONS_PER_SECOND)
-
-static u64 time_in_ms() {
-   struct timeval tv;
-   gettimeofday(&tv, NULL);
-   return (((long long)tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
-}
 
 int main(int argc, char **argv) {
    Chip8 *state;
@@ -80,6 +74,7 @@ int main(int argc, char **argv) {
 
       // fetch, decode, execute an instruction
       chip8_tick(state, key_pressed);
+      chip8_timer_tick(state);
       key_pressed = UINT8_MAX; // set to invalid
 
       // color the screen

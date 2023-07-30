@@ -17,3 +17,9 @@ void *read_bin_file(char *fname, u32 *out_size) {
    }
    return bin;
 }
+
+u64 time_in_ms() {
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return (((long long)tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+}
