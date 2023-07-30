@@ -1,8 +1,6 @@
 #include "chip8.h"
 #include "utils.h"
 
-// Select target hardware in CMakeLists
-
 #define FONT_ADR 0x50
 #define FONT_STRIDE 5
 
@@ -11,6 +9,9 @@
 #define TIMER_THRESHOLD_MS ((1.0 / TIMER_FREQ_HZ) * 1000.0)
 
 /*
+ * Select target hardware in CMakeLists
+ * CHIP8 / SCHIP / XOCHIP
+ *
  * Quirks:
  *
  * Q_VF_RESET
