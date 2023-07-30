@@ -7,8 +7,8 @@
 #define DISPLAY_WIDTH 64
 #define DISPLAY_HEIGHT 32
 
-#define PIXEL_DIM 32        // (PIXEL_DIM x PIXEL_DIM) pixels represent native 1x1
-#define PIXEL_EDGE_OFFSET 3 // Offset colors from pixel edge for some better looking large blocks!
+#define PIXEL_DIM 16        // (PIXEL_DIM x PIXEL_DIM) pixels represent native 1x1
+#define PIXEL_EDGE_OFFSET 0 // Offset colors from pixel edge for some better looking large blocks!
 
 #define INTERPRETER_START_ADR 0x0 // [0, 0x1FF]
 #define PROGRAM_START_ADR 0x200
@@ -32,6 +32,8 @@ bool chip8_init(Chip8 **state);
 void chip8_terminate(Chip8 **state);
 
 void chip8_load_app(Chip8 *state, void *data, u32 size);
+
+bool chip8_should_draw();
 
 void chip8_tick(Chip8 *state, u8 key_pressed);
 

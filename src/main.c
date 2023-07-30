@@ -68,21 +68,22 @@ int main(int argc, char **argv) {
 
       // fetch, decode, execute an instruction
       chip8_tick(state, key_pressed);
-
       key_pressed = UINT8_MAX; // set to invalid
 
       // color the screen
-      for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
-         for (int x = 0; x < DISPLAY_WIDTH; ++x) {
-            const u8 color = state->DISPLAY[y][x] ? 255 : 14; // Modify ON/OFF color :)
-            const SDL_Rect rect = {.x = x * PIXEL_DIM + PIXEL_EDGE_OFFSET,
-                                   .y = y * PIXEL_DIM + PIXEL_EDGE_OFFSET,
-                                   .w = PIXEL_DIM - PIXEL_EDGE_OFFSET,
-                                   .h = PIXEL_DIM - PIXEL_EDGE_OFFSET};
-            SDL_FillRect(sdl->surface, &rect, SDL_MapRGB(sdl->surface->format, color, color, color));
+      if (chip8_should_draw()) {
+         for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
+            for (int x = 0; x < DISPLAY_WIDTH; ++x) {
+               const u8 color = state->DISPLAY[y][x] ? 255 : 14; // Modify ON/OFF color :)
+               const SDL_Rect rect = {.x = x * PIXEL_DIM + PIXEL_EDGE_OFFSET,
+                                      .y = y * PIXEL_DIM + PIXEL_EDGE_OFFSET,
+                                      .w = PIXEL_DIM - PIXEL_EDGE_OFFSET,
+                                      .h = PIXEL_DIM - PIXEL_EDGE_OFFSET};
+               SDL_FillRect(sdl->surface, &rect, SDL_MapRGB(sdl->surface->format, color, color, color));
+            }
          }
+         SDL_UpdateWindowSurface(sdl->window);
       }
-      SDL_UpdateWindowSurface(sdl->window);
    }
 
    free(app);

@@ -42,6 +42,8 @@ static bool KEYS[16] = {false};
 
 static u8 KEY_MAPPING[16] = {0, 1, 2, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
 
+static bool SHOULD_DRAW = false;
+
 bool chip8_init(Chip8 **state) {
    *state = calloc(1, sizeof(**state));
 
@@ -72,6 +74,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
    const u16 N = instr & 0x000F;
    const u16 NN = instr & 0x00FF;  // reused 3rd and 4th nibbles
    const u16 NNN = instr & 0x0FFF; // reused [2nd, 4th] nibbles
+
+   SHOULD_DRAW = false;
 
    // decode
    switch (op) {
@@ -207,6 +211,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       state->GPR[VX] = (rand() % 255) & NN;
       break;
    case 0xD000: {
+      SHOULD_DRAW = true;
       const u16 base_x = state->GPR[VX] % DISPLAY_WIDTH;
       const u16 base_y = state->GPR[VY] % DISPLAY_HEIGHT;
       state->VF = 0;
@@ -245,12 +250,16 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
    case 0xE000: {
       switch (NN) {
       case 0x009E:
-         if (KEYS[state->GPR[VX]])
+         if (KEYS[state->GPR[VX]]) {
             state->PC += 2;
+            KEYS[state->GPR[VX]] = false; // reset
+         }
          break;
       case 0x00A1:
-         if (!KEYS[state->GPR[VX]])
+         if (!KEYS[state->GPR[VX]]) {
             state->PC += 2;
+            KEYS[state->GPR[VX]] = false; // reset (unfinished?)
+         }
          break;
       }
       break;
@@ -281,11 +290,19 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
          d_printf(("Instruction (0x%04hX): I += GPR[%d]\n", instr, VX));
          break;
       case 0x0029:
-         assert(false);
+         state->I = FONT_ADR + state->GPR[VX];
          break;
-      case 0x0033:
-         assert(false);
+      case 0x0033: {
+         u8 div = 100;
+         u8 val = state->GPR[VX];
+         for (s32 i = 0; i < 3; ++i) {
+            state->RAM[state->I + i] = val / div;
+            val -= (state->RAM[state->I + i]) * div;
+            div /= 10;
+         }
+         assert(val == 0);
          break;
+      }
       case 0x0055:
          for (size_t i = 0; i <= VX; ++i) // last included (through i+x)
             state->RAM[state->I + i] = state->GPR[i];
@@ -306,4 +323,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
    default:
       break;
    }
+}
+
+bool chip8_should_draw() {
+   return SHOULD_DRAW;
 }
