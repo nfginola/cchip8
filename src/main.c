@@ -3,6 +3,20 @@
 #include "types.h"
 #include "utils.h"
 
+static SDL_Scancode CONTROLS[] = {
+    SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3, SDL_SCANCODE_4, SDL_SCANCODE_Q, SDL_SCANCODE_W,
+    SDL_SCANCODE_E, SDL_SCANCODE_R, SDL_SCANCODE_A, SDL_SCANCODE_S, SDL_SCANCODE_D, SDL_SCANCODE_F,
+    SDL_SCANCODE_Z, SDL_SCANCODE_X, SDL_SCANCODE_C, SDL_SCANCODE_V,
+};
+
+/* Usually mapped to:
+ *
+ * 1 2 3 4
+ * Q W E R
+ * A S D F
+ * Z X C V
+ */
+
 int main(int argc, char **argv) {
    Chip8 *state;
    chip8_init(&state);
@@ -24,8 +38,20 @@ int main(int argc, char **argv) {
    }
 
    bool keep_window_open = true;
-   int fun = 0;
+   u8 key_pressed = 0;
+   const u8 *kb_state = NULL;
+   s32 num_keys = 0;
    while (keep_window_open) {
+      SDL_PumpEvents();
+      kb_state = SDL_GetKeyboardState(&num_keys);
+
+      for (s32 i = 0; i < 16; ++i) {
+         if (kb_state[CONTROLS[i]]) {
+            key_pressed = i;
+            break;
+         }
+      }
+
       // poll for any events this frame
       SDL_Event e;
       while (SDL_PollEvent(&e) > 0) {
@@ -34,17 +60,16 @@ int main(int argc, char **argv) {
             keep_window_open = false;
             break;
          case SDL_KEYDOWN:
-            state->DISPLAY[2][fun] = true;
             break;
          case SDL_KEYUP:
-            state->DISPLAY[2][fun] = false;
-            fun = (fun + 1) % DISPLAY_WIDTH;
             break;
          }
       }
 
       // fetch, decode, execute an instruction
-      chip8_tick(state);
+      chip8_tick(state, key_pressed);
+
+      key_pressed = UINT8_MAX; // set to invalid
 
       // color the screen
       for (int y = 0; y < DISPLAY_HEIGHT; ++y) {

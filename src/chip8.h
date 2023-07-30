@@ -33,6 +33,6 @@ void chip8_terminate(Chip8 **state);
 
 void chip8_load_app(Chip8 *state, void *data, u32 size);
 
-void chip8_tick(Chip8 *state);
+void chip8_tick(Chip8 *state, u8 key_pressed);
 
 #endif

@@ -22,6 +22,26 @@ static u8 FONT[] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+static bool KEYS[16] = {false};
+/*
+ * 1 2 3 C
+ * 4 5 6 D
+ * 7 8 9 E
+ * A 0 B F
+ */
+
+/*
+ * Expects below layout from outside (row by row)
+ *
+ * 0 1 2 3
+ * 4 5 6 7
+ * 8 9 10 11
+ * 12 13 14 15
+ *
+ */
+
+static u8 KEY_MAPPING[16] = {0, 1, 2, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
+
 bool chip8_init(Chip8 **state) {
    *state = calloc(1, sizeof(**state));
 
@@ -41,7 +61,7 @@ void chip8_load_app(Chip8 *state, void *data, u32 size) {
    memcpy(&state->RAM[state->PC = PROGRAM_START_ADR], data, size);
 }
 
-void chip8_tick(Chip8 *state) {
+void chip8_tick(Chip8 *state, u8 key_pressed) {
    // fetch
    const u16 instr = ((u16)state->RAM[state->PC] << 8) | ((u16)state->RAM[state->PC + 1]);
    state->PC += 2;
@@ -80,6 +100,18 @@ void chip8_tick(Chip8 *state) {
       state->PC = NNN;
       d_printf(("(Unfinished?) Instruction (0x%04hX): Calling subroutine at 0x%04hX\n", instr, state->PC));
       break;
+   case 0x3000:
+      if (state->GPR[VX] == NN)
+         state->PC += 2;
+      break;
+   case 0x4000:
+      if (state->GPR[VX] != NN)
+         state->PC += 2;
+      break;
+   case 0x5000:
+      if (state->GPR[VX] == state->GPR[VY])
+         state->PC += 2;
+      break;
    case 0x6000:
       state->GPR[VX] = NN;
       d_printf(("Instruction (0x%04hX): GPR[%d] = %d\n", instr, VX, NN));
@@ -106,9 +138,63 @@ void chip8_tick(Chip8 *state) {
          state->GPR[VX] ^= state->GPR[VY];
          d_printf(("Instruction (0x%04hX): GPR[%d] ^= GPR[%d]\n", instr, VX, VY));
          break;
+      case 4: {
+         u8 old = state->GPR[VX];
+         state->GPR[VX] += state->GPR[VY];
+
+         // overflow --> set to 1 if carry occurs
+         if (state->GPR[VX] < old)
+            state->VF = 1;
+         else
+            state->VF = 0;
+         break;
+      }
+      case 5: {
+         // will underflow --> set to 0 if borrow occurs
+         if (state->GPR[VX] < state->GPR[VY])
+            state->VF = 0;
+         else
+            state->VF = 1;
+         /* Another way to think of above is:
+          * VF = 1
+          *
+          * if (VX < VY) state->VF = 0     --> The subtraction borrows from VF and therefore sets it to 0!
+          *
+          */
+
+         state->GPR[VX] -= state->GPR[VY];
+         break;
+      }
+      case 6: {
+         state->GPR[VX] = state->GPR[VY];
+         // VF = LSB of old value
+         state->VF = state->GPR[VX] & 0x1;
+         state->GPR[VX] >>= 1;
+         d_printf(("Vague Instruction (0x%04hX): ...\n", instr));
+         break;
+      }
+      case 7: {
+         if (state->GPR[VY] < state->GPR[VX])
+            state->VF = 0;
+         else
+            state->VF = 1;
+         state->GPR[VX] = state->GPR[VY] - state->GPR[VX];
+         break;
+      }
+      case 0xE: {
+         state->GPR[VX] = state->GPR[VY];
+         // VF = MSB of old value
+         state->VF = state->GPR[VX] & (0x1 << 7);
+         state->GPR[VX] <<= 1;
+         break;
+      }
       }
       break;
    }
+   case 0x9000:
+      if (state->GPR[VX] != state->GPR[VY])
+         state->PC += 2;
+      break;
    case 0xA000:
       state->I = NNN;
       d_printf(("Instruction (0x%04hX): I = 0x%04hX\n", instr, NNN));
@@ -116,6 +202,9 @@ void chip8_tick(Chip8 *state) {
    case 0xB000:
       state->PC = NNN + state->GPR[0];
       d_printf(("(Unfinished?) Instruction (0x%04hX): Jump to address 0x%04hX + 0x%04hX\n", instr, NNN, state->GPR[0]));
+      break;
+   case 0xC000:
+      state->GPR[VX] = (rand() % 255) & NN;
       break;
    case 0xD000: {
       const u16 base_x = state->GPR[VX] % DISPLAY_WIDTH;
@@ -154,23 +243,30 @@ void chip8_tick(Chip8 *state) {
       break;
    }
    case 0xE000: {
-      assert(false);
+      switch (NN) {
+      case 0x009E:
+         if (KEYS[state->GPR[VX]])
+            state->PC += 2;
+         break;
+      case 0x00A1:
+         if (!KEYS[state->GPR[VX]])
+            state->PC += 2;
+         break;
+      }
       break;
    }
    case 0xF000: {
       switch (NN) {
-      case 0x009E:
-         assert(false);
-         break;
-      case 0x00A1:
-         assert(false);
-         break;
       case 0x0007:
          state->GPR[VX] = state->DELAY_TIMER;
          d_printf(("Instruction (0x%04hX): GPR[%d] = %d (Delay Timer)\n", instr, VX, state->DELAY_TIMER));
          break;
       case 0x000A:
-         assert(false);
+         if (key_pressed < 16) {
+            state->GPR[VX] = KEY_MAPPING[key_pressed];
+            KEYS[state->GPR[VX]] = true; // set key to true
+         } else
+            state->PC -= 2; // wait if no keypress
          break;
       case 0x0015:
          state->DELAY_TIMER = state->GPR[VX];
