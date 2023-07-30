@@ -1,3 +1,4 @@
+#include "SDL_scancode.h"
 #include "chip8.h"
 #include "sdl_helper.h"
 #include "types.h"
@@ -17,7 +18,7 @@ static SDL_Scancode CONTROLS[] = {
  * Z X C V
  */
 
-#define INSTRUCTIONS_PER_SECOND 700
+#define INSTRUCTIONS_PER_SECOND 200
 #define BUDGET_IN_MICROSECONDS (1000000 / INSTRUCTIONS_PER_SECOND)
 
 static u64 time_in_ms() {
@@ -50,9 +51,6 @@ int main(int argc, char **argv) {
    const u8 *kb_state = NULL;
    s32 num_keys = 0;
 
-   // 700 instructions per second
-   // one loop 1000/700 ms = 1.4285 ms
-
    bool keep_window_open = true;
    while (keep_window_open) {
       u64 time_beg = time_in_ms();
@@ -67,16 +65,15 @@ int main(int argc, char **argv) {
          }
       }
 
+      // use ESC for QUIT as well
+      keep_window_open = !kb_state[SDL_SCANCODE_ESCAPE];
+
       // poll for any events this frame
       SDL_Event e;
       while (SDL_PollEvent(&e) > 0) {
          switch (e.type) {
          case SDL_QUIT:
             keep_window_open = false;
-            break;
-         case SDL_KEYDOWN:
-            break;
-         case SDL_KEYUP:
             break;
          }
       }

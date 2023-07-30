@@ -88,8 +88,8 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       case 0x00EE: {
          u16 prev_adr = state->PC;
          state->PC = adr_pop(&state->STACK);
-         d_printf(("(Unfinished?) Instruction (0x%04hX): Returning from subroutine at 0x%04hX to 0x%04hX\n", instr,
-                   prev_adr, state->PC));
+         d_printf(
+             ("Instruction (0x%04hX): Returning from subroutine at 0x%04hX to 0x%04hX\n", instr, prev_adr, state->PC));
          break;
       }
       }
@@ -263,18 +263,22 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
    }
    case 0xE000: {
       switch (NN) {
-      case 0x009E:
-         if (KEYS[state->GPR[VX]]) {
+      case 0x009E: {
+         const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
+         if (KEYS[state->GPR[VX]] || extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
          }
          break;
-      case 0x00A1:
-         if (!KEYS[state->GPR[VX]]) {
+      }
+      case 0x00A1: {
+         const bool extra_cond = key_pressed < 16 && KEY_MAPPING[key_pressed] == state->GPR[VX];
+         if (!KEYS[state->GPR[VX]] || !extra_cond) {
             state->PC += 2;
             KEYS[state->GPR[VX]] = false; // reset
          }
          break;
+      }
       }
       break;
    }
@@ -291,7 +295,6 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
             d_printf(("key pressed: 0x%04hX, set to %d\n", state->GPR[VX], KEYS[state->GPR[VX]]));
          } else {
             state->PC -= 2; // wait if no keypress
-            d_printf(("no key press!\n"));
          }
          break;
       case 0x0015:
@@ -338,10 +341,19 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       break;
    }
    default:
+      d_printf(("Instruction (0x%04hX): Unhandled!\n", instr));
+      assert(false);
       break;
    }
+
+   // todo: should be decremented at 60Hz == 60 times per second
+   // have a global timer here
+   if (state->DELAY_TIMER >= 1)
+      state->DELAY_TIMER -= 1;
+   if (state->SOUND_TIMER >= 1)
+      state->SOUND_TIMER -= 1;
 }
 
 bool chip8_should_draw() {
-   return true;
+   return SHOULD_DRAW;
 }
