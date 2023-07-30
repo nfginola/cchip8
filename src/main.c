@@ -17,6 +17,15 @@ static SDL_Scancode CONTROLS[] = {
  * Z X C V
  */
 
+#define INSTRUCTIONS_PER_SECOND 700
+#define BUDGET_IN_MICROSECONDS (1000000 / INSTRUCTIONS_PER_SECOND)
+
+static u64 time_in_ms() {
+   struct timeval tv;
+   gettimeofday(&tv, NULL);
+   return (((long long)tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+}
+
 int main(int argc, char **argv) {
    Chip8 *state;
    chip8_init(&state);
@@ -37,11 +46,17 @@ int main(int argc, char **argv) {
       assert(sdl2_init(&sdl, &sdl_conf));
    }
 
-   bool keep_window_open = true;
    u8 key_pressed = 0;
    const u8 *kb_state = NULL;
    s32 num_keys = 0;
+
+   // 700 instructions per second
+   // one loop 1000/700 ms = 1.4285 ms
+
+   bool keep_window_open = true;
    while (keep_window_open) {
+      u64 time_beg = time_in_ms();
+
       SDL_PumpEvents();
       kb_state = SDL_GetKeyboardState(&num_keys);
 
@@ -84,6 +99,14 @@ int main(int argc, char **argv) {
          }
          SDL_UpdateWindowSurface(sdl->window);
       }
+
+      u64 time_diff_us = (time_in_ms() - time_beg) * 1000;
+
+      if (time_diff_us > BUDGET_IN_MICROSECONDS)
+         continue;
+
+      u64 sleep = BUDGET_IN_MICROSECONDS - time_diff_us;
+      usleep(sleep); // usleep takes microsecs
    }
 
    free(app);

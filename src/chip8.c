@@ -40,7 +40,7 @@ static bool KEYS[16] = {false};
  *
  */
 
-static u8 KEY_MAPPING[16] = {0, 1, 2, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
+static u8 KEY_MAPPING[16] = {1, 2, 3, 0xC, 4, 5, 6, 0xD, 7, 8, 9, 0xE, 0xA, 0, 0xB, 0xF};
 
 static bool SHOULD_DRAW = false;
 
@@ -272,7 +272,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
       case 0x00A1:
          if (!KEYS[state->GPR[VX]]) {
             state->PC += 2;
-            KEYS[state->GPR[VX]] = false; // reset (unfinished?)
+            KEYS[state->GPR[VX]] = false; // reset
          }
          break;
       }
@@ -288,8 +288,11 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
          if (key_pressed < 16) {
             state->GPR[VX] = KEY_MAPPING[key_pressed];
             KEYS[state->GPR[VX]] = true; // set key to true
-         } else
+            d_printf(("key pressed: 0x%04hX, set to %d\n", state->GPR[VX], KEYS[state->GPR[VX]]));
+         } else {
             state->PC -= 2; // wait if no keypress
+            d_printf(("no key press!\n"));
+         }
          break;
       case 0x0015:
          state->DELAY_TIMER = state->GPR[VX];
@@ -340,5 +343,5 @@ void chip8_tick(Chip8 *state, u8 key_pressed) {
 }
 
 bool chip8_should_draw() {
-   return SHOULD_DRAW;
+   return true;
 }
