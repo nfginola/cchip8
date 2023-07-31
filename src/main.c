@@ -68,7 +68,6 @@ int main(int argc, char **argv) {
 
       // fetch, decode, execute
       chip8_tick(ch8, get_ch8_keydown(sdl), get_ch8_keyup(sdl));
-      chip8_timer_tick(ch8);
 
       // color the screen
       if (chip8_should_draw(ch8)) {

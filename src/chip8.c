@@ -64,6 +64,8 @@ static const u8 FONT[] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
+static void timer_tick(Chip8 *state);
+
 Chip8 *chip8_init() {
    Chip8 *state = calloc(1, sizeof(*state));
 
@@ -410,13 +412,15 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       assert(false);
       break;
    }
+
+   timer_tick(state);
 }
 
 bool chip8_should_draw(Chip8 *state) {
    return state->SHOULD_DRAW;
 }
 
-void chip8_timer_tick(Chip8 *state) {
+void timer_tick(Chip8 *state) {
    const u64 curr = time_in_ms();
    const u64 diff = curr - state->PREV_TIME;
    if (diff > ceilf(TIMER_THRESHOLD_MS)) {
