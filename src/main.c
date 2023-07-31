@@ -3,6 +3,7 @@
 #include "sdl_helper.h"
 #include "types.h"
 #include "utils.h"
+#include "viz_internals.h"
 
 #define INSTRUCTIONS_PER_SECOND 700
 #define BUDGET_IN_MICROSECONDS (1000000 / INSTRUCTIONS_PER_SECOND)
@@ -102,6 +103,8 @@ int main(int argc, char **argv) {
          }
          SDL_UpdateWindowSurface(sdl->window);
       }
+
+      chip8_viz(state);
 
       u64 time_diff_us = (time_in_ms() - time_beg) * 1000;
       if (time_diff_us > BUDGET_IN_MICROSECONDS)

@@ -13,6 +13,7 @@ set(SOURCE_FILES
    src/chip8.c
    src/viz_bits.c
    src/utils.c
+   src/viz_internals.c
 )
 
 add_executable(app 
