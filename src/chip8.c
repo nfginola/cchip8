@@ -271,6 +271,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
       state->GPR[VX] = (rand() % 255) & NN;
       break;
    case 0xD000: {
+      state->SHOULD_DRAW = true;
       const u16 base_x = state->GPR[VX] % DISPLAY_WIDTH;
       const u16 base_y = state->GPR[VY] % DISPLAY_HEIGHT;
       state->GPR[0xF] = 0;
@@ -309,7 +310,6 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
                state->GPR[0xF] = 1;
             } else if (sprite_pix_on && !disp_pix_on) {
                state->DISPLAY[y][x] = true;
-               state->SHOULD_DRAW = true;
             }
          }
       }
