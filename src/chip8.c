@@ -64,15 +64,15 @@ static const u8 FONT[] = {
     0xF0, 0x80, 0xF0, 0x80, 0x80  // F
 };
 
-bool chip8_init(Chip8 **state) {
-   *state = calloc(1, sizeof(**state));
+Chip8 *chip8_init() {
+   Chip8 *state = calloc(1, sizeof(*state));
 
    // init chip8 font (anywhere in the interpreter space, but commonly at FONT_ADR)
-   memcpy(&(*state)->RAM[FONT_ADR], &FONT, sizeof(FONT));
+   memcpy(&state->RAM[FONT_ADR], &FONT, sizeof(FONT));
 
-   (*state)->PREV_TIME = time_in_ms();
+   state->PREV_TIME = time_in_ms();
 
-   return true;
+   return state;
 }
 
 void chip8_terminate(Chip8 **state) {
@@ -124,7 +124,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
    case 0x2000:
       adr_push(&state->STACK, state->PC); // save jump back adr
       state->PC = NNN;
-      d_printf(("(Unfinished?) Instruction (0x%04hX): Calling subroutine at 0x%04hX\n", instr, state->PC));
+      d_printf(("Instruction (0x%04hX): Calling subroutine at 0x%04hX\n", instr, state->PC));
       break;
    case 0x3000:
       if (state->GPR[VX] == NN)

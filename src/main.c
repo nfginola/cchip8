@@ -24,29 +24,26 @@ static const SDL_Scancode CONTROLS[] = {
  * A S D F
  * Z X C V
  */
+static u8 get_ch8_keydown(SDLCtx *sdl);
+static u8 get_ch8_keyup(SDLCtx *sdl);
 
 int main(int argc, char **argv) {
-   Chip8 *state = NULL;
-   assert(chip8_init(&state));
+   Chip8 *ch8 = chip8_init();
+   SDLConfig sdl_conf = {
+       .title = "Chip 8 Emulator", .width = DISPLAY_WIDTH * PIXEL_DIM, .height = DISPLAY_HEIGHT * PIXEL_DIM};
+   SDLCtx *sdl = sdl2_init(&sdl_conf);
 
+   // load ROM
    void *app = NULL;
    {
       assert(argc > 1);
       u32 app_size = 0;
       app = read_bin_file(argv[1], &app_size);
       assert(app);
-      chip8_load_app(state, app, app_size);
+      chip8_load_app(ch8, app, app_size);
    }
 
-   SDLCtx *sdl = NULL;
-   {
-      SDLConfig sdl_conf = {
-          .title = "Chip 8 Emulator", .width = DISPLAY_WIDTH * PIXEL_DIM, .height = DISPLAY_HEIGHT * PIXEL_DIM};
-      assert(sdl2_init(&sdl, &sdl_conf));
-   }
-
-   const u8 *kb_state = NULL;
-   s32 num_keys = 0;
+   // [0, 15] CHIP8 keys
    u8 key_pressed = 0;
    u8 key_released = 0;
 
@@ -54,26 +51,10 @@ int main(int argc, char **argv) {
    while (keep_window_open) {
       u64 time_beg = time_in_ms();
 
-      SDL_PumpEvents();
-      kb_state = SDL_GetKeyboardState(&num_keys);
-
-      // check for keyup after prev frame
-      if (key_pressed < 16 && !kb_state[CONTROLS[key_pressed]])
-         key_released = key_pressed;
-      else
-         key_released = UINT8_MAX;
-
-      // check for keydown
-      for (s32 i = 0; i < 16; ++i) {
-         if (kb_state[CONTROLS[i]]) {
-            key_pressed = i;
-            break;
-         } else
-            key_pressed = UINT8_MAX;
-      }
+      sdl2_pump_events(sdl);
 
       // use ESC for QUIT as well
-      keep_window_open = !kb_state[SDL_SCANCODE_ESCAPE];
+      keep_window_open = !sdl2_is_key_down(sdl, SDL_SCANCODE_ESCAPE);
 
       // poll for any events this frame
       SDL_Event e;
@@ -85,15 +66,15 @@ int main(int argc, char **argv) {
          }
       }
 
-      // fetch, decode, execute an instruction
-      chip8_tick(state, key_pressed, key_released);
-      chip8_timer_tick(state);
+      // fetch, decode, execute
+      chip8_tick(ch8, get_ch8_keydown(sdl), get_ch8_keyup(sdl));
+      chip8_timer_tick(ch8);
 
       // color the screen
-      if (chip8_should_draw(state)) {
+      if (chip8_should_draw(ch8)) {
          for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
             for (int x = 0; x < DISPLAY_WIDTH; ++x) {
-               const u8 color = state->DISPLAY[y][x] ? PIXEL_ON_COLOR : PIXEL_OFF_COLOR;
+               const u8 color = ch8->DISPLAY[y][x] ? PIXEL_ON_COLOR : PIXEL_OFF_COLOR;
                const SDL_Rect rect = {.x = x * PIXEL_DIM + PIXEL_EDGE_OFFSET,
                                       .y = y * PIXEL_DIM + PIXEL_EDGE_OFFSET,
                                       .w = PIXEL_DIM - PIXEL_EDGE_OFFSET,
@@ -104,7 +85,7 @@ int main(int argc, char **argv) {
          SDL_UpdateWindowSurface(sdl->window);
       }
 
-      chip8_viz(state);
+      chip8_viz(ch8);
 
       u64 time_diff_us = (time_in_ms() - time_beg) * 1000;
       if (time_diff_us > BUDGET_IN_MICROSECONDS)
@@ -117,6 +98,22 @@ int main(int argc, char **argv) {
 
    free(app);
    sdl2_terminate(&sdl);
-   chip8_terminate(&state);
+   chip8_terminate(&ch8);
    return 0;
+}
+
+u8 get_ch8_keydown(SDLCtx *sdl) {
+   for (s32 i = 0; i < 16; ++i) {
+      if (sdl2_is_key_down(sdl, CONTROLS[i]))
+         return i;
+   }
+   return UINT8_MAX;
+}
+
+u8 get_ch8_keyup(SDLCtx *sdl) {
+   for (s32 i = 0; i < 16; ++i) {
+      if (sdl2_is_key_released(sdl, CONTROLS[i]))
+         return i;
+   }
+   return UINT8_MAX;
 }

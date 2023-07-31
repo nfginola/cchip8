@@ -11,7 +11,8 @@ void *read_bin_file(char *fname, u32 *out_size) {
 
       // dump app to memory
       bin = malloc(*out_size);
-      fread(bin, *out_size, 1, file);
+      size_t n = fread(bin, *out_size, 1, file);
+      assert(n > 0);
 
       fclose(file);
    }

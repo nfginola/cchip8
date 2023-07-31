@@ -31,7 +31,7 @@ typedef struct Chip8 {
 
 } Chip8;
 
-bool chip8_init(Chip8 **state);
+Chip8 *chip8_init();
 void chip8_terminate(Chip8 **state);
 
 void chip8_load_app(Chip8 *state, void *data, u32 size);
