@@ -142,7 +142,9 @@ int main(int argc, char **argv) {
          SDL_UpdateWindowSurface(sdl->window);
       }
 
-      // chip8_viz(ch8);
+#ifdef INTERNAL_VISUALIZER
+      chip8_viz(ch8);
+#endif
 
       u64 time_diff_us = (time_in_ms() - time_beg) * 1000;
       if (time_diff_us > BUDGET_IN_MICROSECONDS)
