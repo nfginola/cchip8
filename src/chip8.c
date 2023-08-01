@@ -12,6 +12,9 @@
  * Select target hardware in CMakeLists
  * CHIP8 / SCHIP / XOCHIP
  *
+ * Note: Extensions for SCHIP and XOCHIP are unimplemented.
+ * Only quirks were fixed for the sake of the tests.
+ *
  * Quirks:
  *
  * Q_VF_RESET
@@ -419,6 +422,12 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
 
 bool chip8_should_draw(Chip8 *state) {
    return state->SHOULD_DRAW;
+}
+
+bool chip8_should_beep(Chip8 *state) {
+   if (state->SOUND_TIMER != 0)
+      return true;
+   return false;
 }
 
 void timer_tick(Chip8 *state) {

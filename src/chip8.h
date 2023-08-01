@@ -37,6 +37,7 @@ void chip8_terminate(Chip8 **state);
 void chip8_load_app(Chip8 *state, void *data, u32 size);
 
 bool chip8_should_draw(Chip8 *state);
+bool chip8_should_beep(Chip8 *state);
 
 void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released);
 bool chip8_sync_display();

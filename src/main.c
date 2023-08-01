@@ -5,6 +5,11 @@
 #include "utils.h"
 #include "viz_internals.h"
 
+// Default sound asset path
+#ifndef AUDIO_PATH
+#define AUDIO_PATH "../assets/beep.wav"
+#endif
+
 #define INSTRUCTIONS_PER_SECOND 700
 #define BUDGET_IN_MICROSECONDS (1000000 / INSTRUCTIONS_PER_SECOND)
 
@@ -27,6 +32,25 @@ static const SDL_Scancode CONTROLS[] = {
 static u8 get_ch8_keydown(SDLCtx *sdl);
 static u8 get_ch8_keyup(SDLCtx *sdl);
 
+typedef struct AudioData {
+   u8 *buf;
+   u32 pos;
+   u32 len;
+} AudioData;
+
+static void audio_cb(void *userdata, u8 *stream, int len) {
+   AudioData *dat = userdata;
+
+   if (dat->len <= 0)
+      return;
+
+   len = len > dat->len ? dat->len : len;
+   SDL_MixAudio(stream, dat->buf, len, SDL_MIX_MAXVOLUME / 6);
+
+   dat->buf += len;
+   dat->len -= len;
+}
+
 int main(int argc, char **argv) {
    Chip8 *ch8 = chip8_init();
    SDLConfig sdl_conf = {
@@ -43,9 +67,32 @@ int main(int argc, char **argv) {
       chip8_load_app(ch8, app, app_size);
    }
 
+   // load beep sound
+   AudioData dat = {0};
+   AudioData dat_base = {0};
+   {
+      SDL_AudioSpec spec = {0};
+
+      if (!SDL_LoadWAV(AUDIO_PATH, &spec, &dat.buf, &dat.len))
+         assert(false);
+
+      spec.userdata = &dat;
+      spec.callback = audio_cb;
+
+      // save original
+      dat_base = dat;
+
+      if (SDL_OpenAudio(&spec, NULL) < 0) {
+         printf("Error: %s\n", SDL_GetError());
+         assert(false);
+      }
+   }
+
    // [0, 15] CHIP8 keys
    u8 key_pressed = 0;
    u8 key_released = 0;
+
+   bool beep = false;
 
    bool keep_window_open = true;
    while (keep_window_open) {
@@ -69,6 +116,17 @@ int main(int argc, char **argv) {
       // fetch, decode, execute
       chip8_tick(ch8, get_ch8_keydown(sdl), get_ch8_keyup(sdl));
 
+      // toggle noise
+      if (!beep && chip8_should_beep(ch8)) {
+         SDL_PauseAudio(0); // resume
+         beep = chip8_should_beep(ch8);
+      } else if (beep && !chip8_should_beep(ch8)) {
+         SDL_PauseAudio(1); // pause
+         beep = chip8_should_beep(ch8);
+      }
+      if (dat.len == 0)
+         dat = dat_base; // keep resetting wav
+
       // color the screen
       if (chip8_should_draw(ch8)) {
          for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
@@ -84,7 +142,7 @@ int main(int argc, char **argv) {
          SDL_UpdateWindowSurface(sdl->window);
       }
 
-      chip8_viz(ch8);
+      // chip8_viz(ch8);
 
       u64 time_diff_us = (time_in_ms() - time_beg) * 1000;
       if (time_diff_us > BUDGET_IN_MICROSECONDS)
@@ -94,6 +152,9 @@ int main(int argc, char **argv) {
       if (chip8_sync_display())
          usleep(sleep); // usleep takes microsecs
    }
+
+   SDL_CloseAudio();
+   SDL_FreeWAV(dat_base.buf);
 
    free(app);
    sdl2_terminate(&sdl);

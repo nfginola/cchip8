@@ -33,3 +33,6 @@ target_compile_definitions(app PRIVATE CHIP8)
 #target_compile_definitions(app PRIVATE SCHIP)
 #target_compile_definitions(app PRIVATE XOCHIP)
 
+# audio beep path
+set(WAV_PATH ../assets/beep.wav)
+target_compile_definitions(app PRIVATE AUDIO_PATH=\"${WAV_PATH}\")

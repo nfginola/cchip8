@@ -22,6 +22,9 @@ SDLCtx *sdl2_init(const SDLConfig *conf) {
 
    memset(&ctx->kb_is_released_, SDL_NUM_SCANCODES, sizeof(ctx->kb_is_released_[0]));
 
+   if (SDL_Init(SDL_INIT_AUDIO) < 0)
+      return false;
+
    return ctx;
 }
 
