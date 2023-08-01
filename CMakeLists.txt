@@ -34,7 +34,7 @@ target_compile_definitions(app PRIVATE CHIP8)
 #target_compile_definitions(app PRIVATE XOCHIP)
 
 # audio beep path
-set(WAV_PATH ../assets/beep.wav)
+set(WAV_PATH assets/beep.wav) # assuming we are not in build dir
 target_compile_definitions(app PRIVATE AUDIO_PATH=\"${WAV_PATH}\")
 
 # visualizer
