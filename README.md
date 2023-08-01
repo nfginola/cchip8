@@ -6,6 +6,8 @@ Fully functional CHIP8 emulator/interpreter using SDL2 for graphics and sound.
 Quirks for the SCHIP and XOCHIP are implemented, but not as proper extensions.  
 
 # Build Instructions
+Builds on Linux only.
+
 Required dependencies:  
 - CMake 3.26  
 - SDL2  
