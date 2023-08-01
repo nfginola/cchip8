@@ -225,7 +225,6 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
 
          // VF = LSB of old value
          state->GPR[0xF] = old & 0x1;
-         d_printf(("Vague Instruction (0x%04hX): ...\n", instr));
          break;
       }
       case 7: {
@@ -271,7 +270,7 @@ void chip8_tick(Chip8 *state, u8 key_pressed, u8 key_released) {
 #else
       state->PC = NNN + state->GPR[0];
 #endif
-      d_printf(("(Unfinished?) Instruction (0x%04hX): Jump to address 0x%04hX + 0x%04hX\n", instr, NNN, state->GPR[0]));
+      d_printf(("Instruction (0x%04hX): Jump to address 0x%04hX + 0x%04hX\n", instr, NNN, state->GPR[0]));
       break;
    case 0xC000:
       state->GPR[VX] = (rand() % 255) & NN;
