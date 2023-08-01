@@ -60,10 +60,17 @@ int main(int argc, char **argv) {
    // load ROM
    void *app = NULL;
    {
-      assert(argc > 1);
+      if (argc <= 1) {
+         printf("Please supply the path to the ROM! (.ch8)\n");
+         exit(0);
+      }
+
       u32 app_size = 0;
       app = read_bin_file(argv[1], &app_size);
-      assert(app);
+      if (!app) {
+         printf("ROM file was not found, check your path\n");
+         exit(0);
+      }
       chip8_load_app(ch8, app, app_size);
    }
 
@@ -73,8 +80,10 @@ int main(int argc, char **argv) {
    {
       SDL_AudioSpec spec = {0};
 
-      if (!SDL_LoadWAV(AUDIO_PATH, &spec, &dat.buf, &dat.len))
-         assert(false);
+      if (!SDL_LoadWAV(AUDIO_PATH, &spec, &dat.buf, &dat.len)) {
+         printf("Failed to load WAV file, error: %s\n", SDL_GetError());
+         exit(0);
+      }
 
       spec.userdata = &dat;
       spec.callback = audio_cb;
@@ -83,8 +92,8 @@ int main(int argc, char **argv) {
       dat_base = dat;
 
       if (SDL_OpenAudio(&spec, NULL) < 0) {
-         printf("Error: %s\n", SDL_GetError());
-         assert(false);
+         printf("Failed to open audio, error: %s\n", SDL_GetError());
+         exit(0);
       }
    }
 
