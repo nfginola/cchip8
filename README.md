@@ -14,7 +14,7 @@ Required dependencies:
 
 Steps:
 - Assuming current working directory is 'cchip8'.  
-- Run "chmod +x bootstrap.sh" to give it execute permission"  
+- Run "chmod +x bootstrap.sh" to give it execute permission.
 - Run "./bootstrap.sh".  
 - Run "./build/app example_rom.ch8" to run your desired ROM.
 
