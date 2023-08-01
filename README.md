@@ -17,5 +17,8 @@ Steps:
 - Run "chmod +x bootstrap.sh" to give it execute permission.
 - Run "./bootstrap.sh".  
 - Run "./build/app example_rom.ch8" to run your desired ROM.
-
-
+  
+# References
+[CHIP-8 Instruction Set](https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Instruction-Set).  
+[CHIP-8 Technical Reference](https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference).  
+  
